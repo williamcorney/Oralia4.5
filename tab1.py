@@ -32,12 +32,12 @@ class Tab1(QWidget):
         self.theory2 = QListWidget()
         self.theory3 = QListWidget()
 
-        self.horizontal.addWidget(self.theory1)
-        self.horizontal.addWidget(self.theory2)
-        self.horizontal.addWidget(self.theory3)
+        self.horizontal.addWidget(self.theory1, stretch= 1)
+        self.horizontal.addWidget(self.theory2, stretch=1)
+        self.horizontal.addWidget(self.theory3, stretch=1)
         self.theory1.addItems(["Notes", "Scales", "Triads", "Sevenths", "Modes"])
         self.Scene = QGraphicsScene()
-        self.BackgroundPixmap = QPixmap("/Users/williamcorney/PycharmProjects/Oralia2/Images/keys.png")
+        self.BackgroundPixmap = QPixmap("/Users/williamcorney/PycharmProjects/Oralia4.5/Images/Piano/keys.png")
         self.BackgroundItem = QGraphicsPixmapItem(self.BackgroundPixmap)
         self.Scene.addItem(self.BackgroundItem)
 
@@ -140,13 +140,17 @@ class Tab1(QWidget):
                 self.note_off_signal.emit(mididata.note)
                 self.pressed_notes.remove(mididata.note)
 
+        elif self.parent_widget.currentIndex() == 1:
+        # Call the method in Tab2
+            self.parent_widget.widget(1).midiprocessor(mididata)
+
 
     def insert_green_note(self, note):
         if self.parent_widget.currentIndex() == 0:
 
             self.xcord = self.Theory["NoteCoordinates"][note % 12] + ((note // 12) - 4) * 239
             self.pixmap_item[note] = QGraphicsPixmapItem(
-                QPixmap("./Images/key_" + "green" + self.Theory["NoteFilenames"][note % 12])
+                QPixmap("./Images/Piano/key_" + "green" + self.Theory["NoteFilenames"][note % 12])
             )
             self.pixmap_item[note].setPos(self.xcord, 0)
             current_scene = self.pixmap_item[note].scene()
@@ -160,7 +164,7 @@ class Tab1(QWidget):
 
             self.xcord = self.Theory["NoteCoordinates"][note % 12] + ((note // 12) - 4) * 239
             self.pixmap_item[note] = QGraphicsPixmapItem(
-                QPixmap("./Images/key_" + "red" + self.Theory["NoteFilenames"][note % 12])
+                QPixmap("./Images/Piano/key_" + "red" + self.Theory["NoteFilenames"][note % 12])
             )
             self.pixmap_item[note].setPos(self.xcord, 0)
             current_scene = self.pixmap_item[note].scene()
