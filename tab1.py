@@ -3,13 +3,14 @@ from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import (
     Qt, QTimer, pyqtSignal)
 import pickle,random,copy
+import pygame
 class Tab1(QWidget):
     green_signal = pyqtSignal(int)
     red_signal = pyqtSignal(int)
     note_off_signal = pyqtSignal(int)
     def __init__(self, parent_widget, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.score = 0
         self.lastnote = 0
         self.previous_scale = None
         self.required_notes = []
@@ -53,9 +54,9 @@ class Tab1(QWidget):
 
         self.key_label = QLabel("C Major")
         self.key_label.setFont(QFont("Arial", 32))
-        self.inversion_label = QLabel("B")
+        self.inversion_label = QLabel("")
         self.fingering_label = QLabel("1,2,3,1,2,3,4,5")
-        self.score_label = QLabel("Score :")
+
         self.score_value = QLabel("0")
         self.go_button = QPushButton("Go")
         self.go_button.clicked.connect(self.go_button_clicked)
@@ -63,7 +64,7 @@ class Tab1(QWidget):
         self.horizontal_vertical.addWidget(self.key_label)
         self.horizontal_vertical.addWidget(self.inversion_label)
         self.horizontal_vertical.addWidget(self.fingering_label)
-        self.horizontal_vertical.addWidget(self.score_label)
+
         self.horizontal_vertical.addWidget(self.score_value)
         self.horizontal_vertical.addWidget(self.go_button)
         self.green_signal.connect(self.insert_green_note)
@@ -92,8 +93,10 @@ class Tab1(QWidget):
                         if mididata.note % 12 == self.required_notes:
                             self.green_signal.emit(mididata.note)
                             self.go_button_clicked()
+                            self.increment_score()
                         else:
                             self.red_signal.emit(mididata.note)
+                            self.decrement_score(3)
 
 
                 case "Scales":
@@ -101,10 +104,12 @@ class Tab1(QWidget):
                         if mididata.note == self.required_notes[0]:
                             self.required_notes.pop(0)
                             self.green_signal.emit(mididata.note)
+                            self.increment_score()
                             if len(self.required_notes) == 0:
                                 self.go_button_clicked()
                         else:
                             self.red_signal.emit(mididata.note)
+                            self.decrement_score(3)
                             self.reset_scale()
 
                 case "Triads":
@@ -248,6 +253,7 @@ class Tab1(QWidget):
                     self.previous_scale = self.current_scale
                     self.key_label.setText(self.current_scale)
                     self.fingering_label.setText(str(self.Theory['Fingering'][self.int][self.current_scale]["Right"]))
+                    self.announce_scale(self.current_scale)
                 case "Triads":
                     if not self.theory2list:
                         print("You need to select a scale type")
@@ -349,3 +355,28 @@ class Tab1(QWidget):
     def reset_scale(self):
         if hasattr(self, 'deepnotes') and self.deepnotes:
             self.required_notes = copy.deepcopy(self.deepnotes)
+
+    def increment_score(self, points=1):
+        self.score += points
+        self.score_value.setText(f"Score: {self.score}")
+    def decrement_score(self, points=1):
+        self.score -= points
+        self.score_value.setText(f"Score: {self.score}")
+
+
+
+
+
+    def announce_scale(self, scale_name):
+        # Construct the file path
+        file_path = f"/Users/williamcorney/PycharmProjects/Oralia4.5/sounds/{scale_name}.mp3"
+
+        # Initialize pygame mixer if not already initialized
+        if not pygame.mixer.get_init():
+            pygame.mixer.init()
+
+        # Load the sound file
+        pygame.mixer.music.load(file_path)
+
+        # Play the sound file
+        pygame.mixer.music.play()
