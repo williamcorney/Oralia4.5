@@ -39,7 +39,7 @@ class Tab2(QWidget):
         self.go_button = QPushButton("Go")
 
         self.horizontal1_vertical = QVBoxLayout()
-        self.horizontal1.addLayout(self.horizontal1_vertical, stretch=2)
+        self.horizontal1.addLayout(self.horizontal1_vertical)
         self.horizontal2_vertical = QVBoxLayout()
         self.horizontal2.addLayout(self.horizontal2_vertical)
         # self.horizontal2.addWidget(self.question_label)
@@ -47,7 +47,7 @@ class Tab2(QWidget):
         self.horizontal1_vertical.addWidget(self.key_label)
         self.horizontal1_vertical.addWidget(self.inversion_label)
         self.horizontal1_vertical.addWidget(self.fingering_label)
-        self.horizontal1_vertical.addWidget(self.score_label)
+
         self.horizontal1_vertical.addWidget(self.score_value)
         self.horizontal1_vertical.addWidget(self.go_button)
 

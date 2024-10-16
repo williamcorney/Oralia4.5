@@ -11,13 +11,10 @@ class Oralia(QMainWindow):
         self.tab_widget = QTabWidget(self)  # QTabWidget object
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.West)
         self.setCentralWidget(self.tab_widget)
-
         self.tabs["Practical"] = Tab1(self.tab_widget)
         self.tab_widget.addTab(self.tabs["Practical"], "Practical")
-
         self.tabs["Theory"] = Tab2()
         self.tab_widget.addTab(self.tabs["Theory"], "Theory")
-
         self.tabs["Settings"] = Tab3()
         self.tab_widget.addTab(self.tabs["Settings"], "Settings")
 
