@@ -115,6 +115,7 @@ class Tab2(QWidget):
         return response
 
     def generate_quiz(self, last_correct_answer=None):
+        if not hasattr(self, 'clefftype'): return
         if self.mode == 'notes':
             query = f"SELECT note_file_name, note_display_name, note_clef, note_file_name2,difficulty FROM notes WHERE note_clef = '{self.clefftype}' AND difficulty = '{self.difficultylevel}'"
         else:  # mode == 'signatures'
@@ -123,6 +124,12 @@ class Tab2(QWidget):
 
         if last_correct_answer:
             rows = [row for row in rows if row[0] != last_correct_answer]
+
+        try:
+            rows
+        except NameError:
+            return
+
 
         correct_row = random.choice(rows)
 
@@ -141,7 +148,15 @@ class Tab2(QWidget):
         print(f"Correct Answer: {correct_row[0]}")
 
         remaining_rows = [row for row in rows if row[1] != correct_row[1]]
-        wrong_rows = random.sample(remaining_rows, 3)
+        try:
+            wrong_rows = random.sample(remaining_rows, 3)
+        except:
+            print ('Error occurred at this place in code')
+
+        try:
+            wrong_rows
+        except NameError:
+            return
         wrong_answers = {
             "wrong_answer_1": {
                 "answer_image": wrong_rows[0][0],
@@ -187,6 +202,7 @@ class Tab2(QWidget):
         return {"correct_answer": correct_answer, "wrong_answers": wrong_answers}
 
     def load_quiz(self):
+        if not hasattr(self, 'clefftype'): return
         self.quiz = self.generate_quiz(self.last_correct_answer)
         if self.mode == 'notes':
             image_base_path = f"/Users/williamcorney/PycharmProjects/Oralia4.5/Images/Notes/{self.clefftype}/"

@@ -23,4 +23,4 @@ window = Oralia()
 window.show()
 
 with mido.open_input(callback=window.tabs["Practical"].note_handler) as inport:
-    app.exec()
+    sys.exit(app.exec())
