@@ -256,7 +256,6 @@ class Tab1(QWidget):
                         include_descending=False
                     )[::-1]  # Reverse to get descending notes only
                     self.required_notes = ascending_notes[:-1] + descending_notes
-                    print (self.required_notes)
                 else:
                     self.required_notes = self.midi_note_scale_generator(
                         self.Theory["Scales"][self.type][self.int],
@@ -266,10 +265,11 @@ class Tab1(QWidget):
                 self.key_label.setText(self.current_scale)
             case "Triads":
                 self.set_chord_notes(self.Theory["Triads"])
-                self.key_label.setText(f"{self.current_scale} {self.inv}")
+                print (self.current_scale)
+                self.key_label.setText(f"{self.current_scale}")
             case "Sevenths":
                 self.set_chord_notes(self.Theory["Sevenths"])
-                self.key_label.setText(f"{self.current_scale} {self.inv}")
+                self.key_label.setText(f"{self.current_scale}")
             case "Modes":
                 self.required_notes = self.midi_note_scale_generator(
                     self.Theory["Modes"][self.letter][self.type],
@@ -283,8 +283,29 @@ class Tab1(QWidget):
 
         self.deepnotes = copy.deepcopy(self.required_notes)
 
-        if self.theorymode != "Notes":
-            self.announce_scale(self.current_scale)
+
+
+    def set_shell_notes(self):
+        if not hasattr(self, 'theory3list'):
+            return
+        shell_notes = self.Theory["Shells"][self.type][self.current_scale]
+        if self.theory3list[0] == "7/3":
+            self.required_notes = shell_notes[1]
+        else:
+            self.required_notes = shell_notes[0]
+        self.inversion_label.setText(self.theory3.currentItem().text())
+        self.key_label.setText(f'{self.current_scale} 7th')
+
+    def set_chord_notes(self, chord_type):
+        if not hasattr(self, 'theory3list'):
+            return
+        self.required_notes = self.midi_note_scale_generator(
+            chord_type[self.current_scale][self.inv],
+            octaves=1,
+            base_note=60,
+            include_descending=False
+        )
+        self.current_scale = f"{self.letter} {self.type} {self.inv}"  # Use self.letter and self.type directly to avoid duplications
 
     def midi_note_scale_generator(self, notes, octaves=1, base_note=60, repeat_middle=False, include_descending=True):
         adjusted_notes = [note + base_note for note in notes]
