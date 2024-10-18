@@ -85,19 +85,18 @@ class Tab1(QWidget):
                             self.populate_labels(self.Theory['Stats'])
                             self.green_signal.emit(mididata.note)
                             self.go_button_clicked()
-                            self.increment_score()
-                            self.announce_scale("01")
+                            self.result_pixmap("correct")
+
                         else:
+                            self.result_pixmap("incorrect")
                             self.red_signal.emit(mididata.note)
                             self.Theory["Stats"][str(self.letter)] -= 1
                             self.populate_labels(self.Theory['Stats'])
-                            self.decrement_score(3)
                 case "Scales":
                     if mididata.type == "note_on":
                         if mididata.note == self.required_notes[0]:
                             self.required_notes.pop(0)
                             self.green_signal.emit(mididata.note)
-                            self.increment_score()
                             if len(self.required_notes) == 0:
                                 self.announce_scale("01")
                                 self.Theory["Stats"][str(self.letter)] += 1
@@ -107,7 +106,6 @@ class Tab1(QWidget):
                             self.Theory["Stats"][str(self.letter)] -= 1
                             self.populate_labels(self.Theory['Stats'])
                             self.red_signal.emit(mididata.note)
-                            self.decrement_score(3)
                             self.reset_scale()
                 case "Triads":
                     if mididata.type == "note_on":
@@ -117,13 +115,10 @@ class Tab1(QWidget):
                             if len(self.pressed_notes) >= 3:
                                 self.Theory["Stats"][str(self.letter)] += 1
                                 self.populate_labels(self.Theory['Stats'])
-                                self.announce_scale("01")
+                                self.result_pixmap("correct")
                                 self.go_button_clicked()
                         else:
-                            self.pressed_notes.append(mididata.note)
-                            if len(self.pressed_notes) >= 3:
-                                self.Theory["Stats"][str(self.letter)] -= 1
-                                self.populate_labels(self.Theory['Stats'])
+                            self.result_pixmap("incorrect")
                             self.red_signal.emit(mididata.note)
                 case "Sevenths":
                     if mididata.type == "note_on":
@@ -133,20 +128,21 @@ class Tab1(QWidget):
                             if len(self.pressed_notes) >= 4:
                                 self.Theory["Stats"][str(self.letter)] += 1
                                 self.populate_labels(self.Theory['Stats'])
+                                self.result_pixmap("correct")
                                 self.go_button_clicked()
                         else:
-                            self.pressed_notes.append(mididata.note)
-                            if len(self.pressed_notes) >= 4:
-                                self.Theory["Stats"][str(self.letter)] -= 1
-                                self.populate_labels(self.Theory['Stats'])
+                            self.result_pixmap("incorrect")
                             self.red_signal.emit(mididata.note)
                 case "Modes":
                     if mididata.type == "note_on":
                         if mididata.note == self.required_notes[0]:
                             self.green_signal.emit(mididata.note)
                             self.required_notes.pop(0)
-                            if len(self.required_notes) == 0:self.go_button_clicked()
+                            if len(self.required_notes) == 0:
+                                self.result_pixmap("correct")
+                                self.go_button_clicked()
                         else:
+                            self.result_pixmap("incorrect")
                             self.red_signal.emit(mididata.note)
                             self.reset_scale()
                 case "Shells":
@@ -158,12 +154,10 @@ class Tab1(QWidget):
                                 self.Theory["Stats"][str(self.letter)] += 1
                                 self.populate_labels(self.Theory['Stats'])
                                 self.go_button_clicked()
-                                self.announce_scale("01")
+                                self.result_pixmap("correct")
                         else:
-                            self.pressed_notes.append(mididata.note)
-                            if len(self.pressed_notes) >= 2:
-                                self.Theory["Stats"][str(self.letter)] -= 1
-                                self.populate_labels(self.Theory['Stats'])
+                            self.result_pixmap("incorrect")
+
                             self.red_signal.emit(mididata.note)
 
             if mididata.type == "note_off":
@@ -193,6 +187,10 @@ class Tab1(QWidget):
     def go_button_clicked(self):
         self.get_theory_items()
     def theory1_clicked(self):
+        self.clear_labels()
+        self.score_value.setText("")
+        self.fingering_label.clear()
+        self.key_label.setText("")
         self.Theory['Stats'] = {}
         self.theory2.clear()
         self.theory3.clear()
@@ -210,7 +208,7 @@ class Tab1(QWidget):
         self.theory2list = [item.text() for item in self.theory2.selectedItems()]
         match self.theorymode:
             case "Notes": pass
-            case "Scales": self.theory3.addItems(["Left","Right"])
+            case "Scales": self.theory3.addItems(["Right","Left"])
             case "Triads": self.theory3.addItems(["Root", "First", "Second"])
             case "Sevenths": self.theory3.addItems(["Root", "First", "Second", "Third"])
             case "Modes": pass
@@ -224,78 +222,65 @@ class Tab1(QWidget):
             case "Shells":self.theory3list = [item.text() for item in self.theory3.selectedItems()]
 
     def get_theory_items(self):
-        if hasattr(self, 'theorymode'):
-            match self.theorymode:
-                case "Notes":
-                    if not hasattr(self, 'theory2list'): return
-                    self.get_random_values()
-                    self.required_notes = self.int
-                    if self.type == "Flats":self.key_label.setText(self.Theory["Enharmonic"][self.required_notes])
-                    else:self.key_label.setText(self.Theory["Chromatic"][self.required_notes])
-                    if self.letter not in self.Theory["Stats"]:self.Theory["Stats"][str(self.letter)] = 0
-                case "Scales":
-                    if not hasattr(self, 'theory2list'): return
-                    self.get_random_values()
-                    while self.current_scale == self.previous_scale:self.get_random_values()
-                    self.required_notes = (self.midi_note_scale_generator((self.Theory["Scales"][self.type][self.int]),octaves=int(self.Settings['User']['Octaves']),base_note=60))
-                    if hasattr(self, 'theory3list') and self.theory3list[0] == "Left":
-                        self.required_notes = (self.midi_note_scale_generator((self.Theory["Scales"][self.type][self.int]),octaves=int(self.Settings['User']['Octaves']),base_note=48))
-                        self.fingering_label.setText(str(self.Theory['Fingering'][self.int][self.current_scale]["Left"]))
-                    else:
-                        self.required_notes = (self.midi_note_scale_generator((self.Theory["Scales"][self.type][self.int]),octaves=int(self.Settings['User']['Octaves']),base_note=60))
-                        self.fingering_label.setText(str(self.Theory['Fingering'][self.int][self.current_scale]["Right"]))
-                    self.deepnotes = copy.deepcopy(self.required_notes)
-                    self.previous_scale = self.current_scale
-                    if self.letter not in self.Theory["Stats"]: self.Theory["Stats"][str(self.letter)] = 0
-                    self.key_label.setText(self.current_scale)
-                    self.announce_scale(self.current_scale)
-                case "Triads":
-                    if not hasattr(self, 'theory2list'): return
-                    if not hasattr(self, 'theory3list'): return
-                    self.get_random_values()
-                    while self.current_scale == self.previous_scale:self.get_random_values()
-                    self.required_notes = self.midi_note_scale_generator(self.Theory["Triads"][self.current_scale][self.inv],octaves=1,base_note=60, include_descending=False)
-                    self.current_scale = f"{self.current_scale} {self.inv}"
-                    self.deepnotes = copy.deepcopy(self.required_notes)
-                    self.previous_scale = self.current_scale
-                    if self.letter not in self.Theory["Stats"]: self.Theory["Stats"][str(self.letter)] = 0
-                    self.key_label.setText(self.current_scale)
-                case "Sevenths":
-                    if not hasattr(self, 'theory2list'): return
-                    if not hasattr(self, 'theory3list'): return
-                    self.get_random_values()
-                    while self.current_scale == self.previous_scale:self.get_random_values()
-                    self.required_notes = self.midi_note_scale_generator(self.Theory["Sevenths"][self.current_scale][self.inv],octaves=1,base_note=60, include_descending=False)
-                    self.current_scale = f"{self.current_scale} {self.inv}"
-                    self.deepnotes = copy.deepcopy(self.required_notes)
-                    self.previous_scale = self.current_scale
-                    if self.letter not in self.Theory["Stats"]: self.Theory["Stats"][str(self.letter)] = 0
-                    self.key_label.setText(self.current_scale)
-                case "Modes":
-                    if not hasattr(self, 'theory2list'): return
-                    self.get_random_values()
-                    while self.current_scale == self.previous_scale:self.get_random_values()
-                    self.required_notes = (self.midi_note_scale_generator((self.Theory["Modes"][self.letter][self.type]),octaves=1,base_note=60))
-                    self.deepnotes = copy.deepcopy(self.required_notes)
-                    self.previous_scale = self.current_scale
-                    if self.letter not in self.Theory["Stats"]: self.Theory["Stats"][str(self.letter)] = 0
-                    self.key_label.setText(self.current_scale)
-                case "Shells":
-                    if not hasattr(self, 'theory2list'): return
-                    self.get_random_values()
-                    while self.current_scale == self.previous_scale:self.get_random_values()
-                    if not hasattr(self, 'theory3list'): return
-                    if self.theory3list[0] == "7/3": self.required_notes = self.Theory["Shells"][self.type][self.current_scale][1]
-                    else: self.required_notes = self.Theory["Shells"][self.type][self.current_scale][0]
-                    if self.letter not in self.Theory["Stats"]: self.Theory["Stats"][str(self.letter)] = 0
-                    self.key_label.setText(self.current_scale)
-                    self.inversion_label.setText(self.theory3.currentItem().text())
-                    self.previous_scale = self.current_scale
-                    self.key_label.setText((f'{self.current_scale} 7th'))
+        if not hasattr(self, 'theorymode') or not hasattr(self, 'theory2list'):
+            return
+
+        self.get_random_values()
+
+        # Handle non-Notes cases where self.current_scale is necessary
+        if self.theorymode in ["Scales", "Triads", "Sevenths", "Modes", "Shells"]:
+            while self.current_scale == self.previous_scale:
+                self.get_random_values()
+            self.previous_scale = self.current_scale
+
+        if self.letter not in self.Theory["Stats"]:
+            self.Theory["Stats"][str(self.letter)] = 0
+
+        match self.theorymode:
+            case "Notes":
+                self.required_notes = self.int
+                scale_text = self.Theory["Enharmonic"][self.required_notes] if self.type == "Flats" else \
+                self.Theory["Chromatic"][self.required_notes]
+                self.key_label.setText(scale_text)
+            case "Scales":
+                if self.type == "Harmonic Minor":
+                    self.required_notes = self.midi_note_scale_generator(
+                        self.Theory["Scales"]["Harmonic Minor"][self.int],
+                        octaves=int(self.Settings['User']['Octaves']), base_note=60, include_descending=False)
+                    descending_notes = self.midi_note_scale_generator(self.Theory["Scales"]["Minor"][self.int],
+                                                                      octaves=int(self.Settings['User']['Octaves']),
+                                                                      base_note=60, include_descending=True)
+                    self.required_notes.extend(descending_notes[len(descending_notes) // 2:])
+                else:
+                    self.required_notes = self.midi_note_scale_generator(self.Theory["Scales"][self.type][self.int],
+                                                                         octaves=int(self.Settings['User']['Octaves']),
+                                                                         base_note=60)
+                self.key_label.setText(self.current_scale)
+            case "Triads":
+                self.set_chord_notes(self.Theory["Triads"])
+                self.key_label.setText(f"{self.current_scale} {self.inv}")
+            case "Sevenths":
+                self.set_chord_notes(self.Theory["Sevenths"])
+                self.key_label.setText(f"{self.current_scale} {self.inv}")
+            case "Modes":
+                self.required_notes = self.midi_note_scale_generator(self.Theory["Modes"][self.letter][self.type],
+                                                                     octaves=1, base_note=60)
+                self.key_label.setText(self.current_scale)
+            case "Shells":
+                self.set_shell_notes()
+                self.key_label.setText(f"{self.current_scale} 7th")
+
+        self.deepnotes = copy.deepcopy(self.required_notes)
+
+        # Announce the scale for all modes except "Notes"
+        if self.theorymode != "Notes":
+            self.announce_scale(self.current_scale)
+
     def midi_note_scale_generator(self, notes, octaves=1, base_note=60, repeat_middle=False, include_descending=True):
         adjusted_notes = [note + base_note for note in notes]
         extended_notes = adjusted_notes[:]
-        for octave in range(1, octaves): extended_notes.extend([note + 12 * octave for note in adjusted_notes[1:]])
+        for octave in range(1, octaves):
+            extended_notes.extend([note + 12 * octave for note in adjusted_notes[1:]])
         if include_descending:
             reversed_notes = extended_notes[::-1] if repeat_middle else extended_notes[:-1][::-1]
             extended_notes.extend(reversed_notes)
@@ -314,6 +299,7 @@ class Tab1(QWidget):
 
         match self.theorymode:
             case "Notes":
+                if not hasattr(self,"theory2list") : return
                 self.type = random.choice(self.theory2list)
                 self.notes = self.Theory["Notes"][self.type]
                 self.int = random.choice(self.notes)
@@ -344,6 +330,14 @@ class Tab1(QWidget):
         for i, label in enumerate(self.labels):
             if i < len(items): label.setText(items[i])
             else: label.setText("")
+
+    def clear_labels(self):
+        for label in self.labels:
+            label.setText("")
+
+
+    def result_pixmap(self,label):
+        self.fingering_label.setPixmap(QPixmap(f"/Users/williamcorney/PycharmProjects/Oralia5/Images/{label}.png"))
 if __name__ == "__main__":
     import Oralia
     oralia.main()
