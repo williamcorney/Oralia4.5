@@ -2,8 +2,6 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout,QListWidget,QHBoxLayout,QGraphi
 from PyQt6.QtGui import QPixmap, QFont
 from PyQt6.QtCore import (Qt, QTimer, pyqtSignal)
 import pickle,random,copy, pygame,os,time
-
-
 class Tab1(QWidget):
     green_signal = pyqtSignal(int)
     red_signal = pyqtSignal(int)
@@ -22,7 +20,6 @@ class Tab1(QWidget):
         self.required_notes = []
         self.pressed_notes = []
         self.pixmap_item = {}
-        #self.theory3list = "3/7"
         with open('theory.pkl', 'rb') as file: self.Theory = pickle.load(file)
         with open('settings.pkl', 'rb') as file: self.Settings = pickle.load(file)
         self.parent_widget = parent_widget  # Store reference to QTabWidget
@@ -87,7 +84,6 @@ class Tab1(QWidget):
                             self.Theory["Stats"][str(self.letter)] +=1
                             self.populate_labels(self.Theory['Stats'])
                             self.green_signal.emit(mididata.note)
-                            print (self.Theory["Stats"][str(self.letter)])
                             self.go_button_clicked()
                             self.increment_score()
                             self.announce_scale("01")
@@ -213,18 +209,12 @@ class Tab1(QWidget):
         self.theory3.clear()
         self.theory2list = [item.text() for item in self.theory2.selectedItems()]
         match self.theorymode:
-            case "Notes":
-                pass
-            case "Scales":
-                self.theory3.addItems(["Left","Right"])
-            case "Triads":
-                self.theory3.addItems(["Root", "First", "Second"])
-            case "Sevenths":
-                self.theory3.addItems(["Root", "First", "Second", "Third"])
-            case "Modes":
-                pass
-            case "Shells":
-                self.theory3.addItems(["3/7","7/3"])
+            case "Notes": pass
+            case "Scales": self.theory3.addItems(["Left","Right"])
+            case "Triads": self.theory3.addItems(["Root", "First", "Second"])
+            case "Sevenths": self.theory3.addItems(["Root", "First", "Second", "Third"])
+            case "Modes": pass
+            case "Shells": self.theory3.addItems(["3/7","7/3"])
     def theory3_clicked(self):
         match self.theorymode:
             case "Notes":self.theory3list = [item.text() for item in self.theory3.selectedItems()]
@@ -310,47 +300,34 @@ class Tab1(QWidget):
             reversed_notes = extended_notes[::-1] if repeat_middle else extended_notes[:-1][::-1]
             extended_notes.extend(reversed_notes)
         return extended_notes
+
     def get_random_values(self):
+        if not hasattr(self, 'theorymode'): return
+
+        def set_common_values(int_range, scale_key):
+            self.int = random.choice(int_range)
+            while self.lastnote == self.int: self.int = random.choice(int_range)
+            self.letter = self.Theory[scale_key][self.int]
+            self.lastnote = self.int
+            self.type = random.choice(self.theory2list)
+            self.current_scale = f"{self.letter} {self.type}"
+
         match self.theorymode:
             case "Notes":
                 self.type = random.choice(self.theory2list)
                 self.notes = self.Theory["Notes"][self.type]
                 self.int = random.choice(self.notes)
-                while self.lastnote == self.int: self.int = random.choice(self.notes)
+                while self.lastnote == self.int:self.int = random.choice(self.notes)
                 self.letter = self.Theory["Chromatic"][self.int]
                 self.lastnote = self.int
             case "Scales":
-                self.int = random.choice([0, 2, 4, 5, 7, 9, 11])
-                while self.lastnote == self.int: self.int = random.choice([0, 2, 4, 5, 7, 9, 11])
-                self.letter = self.Theory["Enharmonic"][self.int]
-                self.type = random.choice(self.theory2list)
-                self.current_scale = f"{self.letter} {self.type}"
-                self.lastnote = self.int
-            case "Triads":
-                self.int = random.randint(0, 11)
-                self.letter = self.Theory["Enharmonic"][self.int]
-                self.type = random.choice(self.theory2list)
-                self.current_scale = f"{self.letter} {self.type}"
-                self.inv = random.choice(self.theory3list)
-            case "Sevenths":
-                self.int = random.randint(0, 11)
-                self.letter = self.Theory["Enharmonic"][self.int]
-                self.type = random.choice(self.theory2list)
-                self.current_scale = f"{self.letter} {self.type}"
-                self.inv = random.choice(self.theory3list)
-            case "Modes":
-                self.int = random.randint(0, 11)
-                self.letter = self.Theory["Enharmonic"][self.int]
-                self.type = random.choice(self.theory2list)
-                self.current_scale = f"{self.letter} {self.type}"
-            case "Shells":
-                self.int = random.randint(0, 11)
-                self.letter = self.Theory["Enharmonic"][self.int]
-                self.type = random.choice(self.theory2list)
-                self.current_scale = f"{self.letter} {self.type}"
+                set_common_values([0, 2, 4, 5, 7, 9, 11], "Enharmonic")
+            case "Triads" | "Sevenths" | "Modes" | "Shells":
+                set_common_values(range(12), "Enharmonic")
+                if self.theorymode in ["Triads", "Sevenths"]:self.inv = random.choice(self.theory3list)
+
     def reset_scale(self):
-        if hasattr(self, 'deepnotes') and self.deepnotes:
-            self.required_notes = copy.deepcopy(self.deepnotes)
+        if hasattr(self, 'deepnotes') and self.deepnotes: self.required_notes = copy.deepcopy(self.deepnotes)
     def increment_score(self, points=1):
         self.score += points
         self.score_value.setText(f"Score: {self.score}")
