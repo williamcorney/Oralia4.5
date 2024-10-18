@@ -197,7 +197,7 @@ class Tab1(QWidget):
         self.theorymode = self.theory1.selectedItems()[0].text()
         match self.theorymode:
             case "Notes":self.theory2.addItems(["Naturals", "Sharps", "Flats"])
-            case "Scales":self.theory2.addItems(["Major", "Minor", "Melodic Minor", "Harmonic Minor"])
+            case "Scales":self.theory2.addItems(["Major", "Minor","Harmonic Minor","Melodic Minor"])
             case "Triads":self.theory2.addItems(["Major", "Minor"])
             case "Sevenths":self.theory2.addItems(["Maj7", "Min7", "7", "Dim7", "m7f5"])
             case "Modes":self.theory2.addItems(["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"])
@@ -227,7 +227,6 @@ class Tab1(QWidget):
 
         self.get_random_values()
 
-        # Handle non-Notes cases where self.current_scale is necessary
         if self.theorymode in ["Scales", "Triads", "Sevenths", "Modes", "Shells"]:
             while self.current_scale == self.previous_scale:
                 self.get_random_values()
@@ -244,17 +243,26 @@ class Tab1(QWidget):
                 self.key_label.setText(scale_text)
             case "Scales":
                 if self.type == "Harmonic Minor":
-                    self.required_notes = self.midi_note_scale_generator(
+                    ascending_notes = self.midi_note_scale_generator(
                         self.Theory["Scales"]["Harmonic Minor"][self.int],
-                        octaves=int(self.Settings['User']['Octaves']), base_note=60, include_descending=False)
-                    descending_notes = self.midi_note_scale_generator(self.Theory["Scales"]["Minor"][self.int],
-                                                                      octaves=int(self.Settings['User']['Octaves']),
-                                                                      base_note=60, include_descending=True)
-                    self.required_notes.extend(descending_notes[len(descending_notes) // 2:])
+                        octaves=int(self.Settings['User']['Octaves']),
+                        base_note=60,
+                        include_descending=False
+                    )
+                    descending_notes = self.midi_note_scale_generator(
+                        self.Theory["Scales"]["Minor"][self.int],
+                        octaves=int(self.Settings['User']['Octaves']),
+                        base_note=60,
+                        include_descending=False
+                    )[::-1]  # Reverse to get descending notes only
+                    self.required_notes = ascending_notes[:-1] + descending_notes
+                    print (self.required_notes)
                 else:
-                    self.required_notes = self.midi_note_scale_generator(self.Theory["Scales"][self.type][self.int],
-                                                                         octaves=int(self.Settings['User']['Octaves']),
-                                                                         base_note=60)
+                    self.required_notes = self.midi_note_scale_generator(
+                        self.Theory["Scales"][self.type][self.int],
+                        octaves=int(self.Settings['User']['Octaves']),
+                        base_note=60
+                    )
                 self.key_label.setText(self.current_scale)
             case "Triads":
                 self.set_chord_notes(self.Theory["Triads"])
@@ -263,8 +271,11 @@ class Tab1(QWidget):
                 self.set_chord_notes(self.Theory["Sevenths"])
                 self.key_label.setText(f"{self.current_scale} {self.inv}")
             case "Modes":
-                self.required_notes = self.midi_note_scale_generator(self.Theory["Modes"][self.letter][self.type],
-                                                                     octaves=1, base_note=60)
+                self.required_notes = self.midi_note_scale_generator(
+                    self.Theory["Modes"][self.letter][self.type],
+                    octaves=1,
+                    base_note=60
+                )
                 self.key_label.setText(self.current_scale)
             case "Shells":
                 self.set_shell_notes()
@@ -272,7 +283,6 @@ class Tab1(QWidget):
 
         self.deepnotes = copy.deepcopy(self.required_notes)
 
-        # Announce the scale for all modes except "Notes"
         if self.theorymode != "Notes":
             self.announce_scale(self.current_scale)
 
